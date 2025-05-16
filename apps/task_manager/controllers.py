@@ -8,6 +8,10 @@ import copy
 
 url_signer = URLSigner(session)
 
+@action('/')
+def index():
+    redirect(URL('index'))
+
 @action("index")
 @action.uses("index.html", auth.user, db)
 def index():
