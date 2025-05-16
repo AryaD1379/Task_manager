@@ -1,0 +1,51 @@
+timestamp: 2025-05-16T11:22:43.019386
+CREATE TABLE "auth_user"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "username" CHAR(512) UNIQUE,
+    "email" CHAR(512) UNIQUE,
+    "password" CHAR(512),
+    "first_name" CHAR(512),
+    "last_name" CHAR(512),
+    "sso_id" CHAR(512),
+    "action_token" CHAR(512),
+    "last_password_change" TIMESTAMP,
+    "past_passwords_hash" TEXT
+);
+success!
+timestamp: 2025-05-16T11:22:43.020744
+CREATE TABLE "auth_user_tag_groups"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "tagpath" CHAR(512),
+    "record_id" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  
+);
+success!
+timestamp: 2025-05-16T11:22:43.022711
+CREATE TABLE "task"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "title" CHAR(512),
+    "description" CHAR(512),
+    "date_created" TIMESTAMP,
+    "deadline" TIMESTAMP,
+    "status" CHAR(512),
+    "created_by" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "assigned_to" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "created_by_name" CHAR(512),
+    "assigned_to_name" CHAR(512)
+);
+success!
+timestamp: 2025-05-16T11:22:43.023531
+CREATE TABLE "comment"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "taskid" INTEGER REFERENCES "task" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "body" CHAR(512),
+    "post_date" TIMESTAMP,
+    "author" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  
+);
+success!
+timestamp: 2025-05-16T11:22:43.024232
+CREATE TABLE "user_manager"(
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "user_id" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  ,
+    "manager_id" INTEGER REFERENCES "auth_user" ("id") ON DELETE CASCADE ON UPDATE CASCADE  
+);
+success!

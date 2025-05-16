@@ -1,0 +1,260 @@
+[[extend 'layout.html']]
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+
+<div id="app">
+  <div class="columns">
+    <!-- Filters Bar -->
+    <div class="column is-one-quarter">
+      <aside class="menu box">
+        <p class="menu-label">
+          Filter Tasks
+        </p>
+        <!-- Date Created -->
+        <div class="field">
+          <label class="label">Date Created:</label>
+          <div class="control">
+            <button class="button is-fullwidth" v-on:click="toggleDateCreated()">
+              <b>{{ filters.date_created ? 'Descending' : 'Ascending' }}</b>
+            </button>
+          </div>
+        </div>
+        <!-- Deadline -->
+        <div class="field">
+          <label class="label">Deadline:</label>
+          <div class="control">
+            <button class="button is-fullwidth" v-on:click="toggleDeadline()">
+              <b>{{ filters.deadline ? 'Descending' : 'Ascending' }}</b>
+            </button>
+        </div>
+        <!-- Status -->
+        <div class="field">
+          <label class="label">Status:</label>
+          <div class="control">
+            <div class="select is-fullwidth">
+              <select v-model="filters.status">
+                <option value="">All</option>
+                <option value="pending">Pending</option>
+                <option value="acknowledged">Acknowledged</option>
+                <option value="rejected">Rejected</option>
+                <option value="completed">Completed</option>
+                <option value="failed">Failed</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <!-- Created by Self -->
+        <div class="field">
+          <label class="checkbox">
+            <input type="checkbox" v-model="filters.created_by_self">
+            Created by Self
+          </label>
+        </div>
+        <!-- Assigned by Self -->
+        <div class="field">
+          <label class="checkbox">
+            <input type="checkbox" v-model="filters.assigned_to_self">
+            Assigned to Self
+          </label>
+        </div>
+        <!-- Created by Any Managed User -->
+        <div class="field">
+          <label class="checkbox">
+            <input type="checkbox" v-model="filters.created_by_managed_users">
+            Created by Any Managed Users
+          </label>
+        </div>
+        <!-- Assigned by Any Managed User -->
+        <div class="field">
+          <label class="checkbox">
+            <input type="checkbox" v-model="filters.assigned_to_managed_users">
+            Assigned to Any Managed Users
+          </label>
+        </div>
+        <!-- Created by Specific User -->
+        <div class="field">
+          <label class="label">
+            Created By:
+          </label>
+          <input type="text" class="input" v-model="filters.created_by_user" placeholder="name">
+        </div>
+        <!-- Assigned to Specific User -->
+        <div class="field">
+          <label class="label">
+            Assigned To:
+          </label>
+          <div class="control">
+            <input type="text" class="input" v-model="filters.assigned_to_user" placeholder="name">
+          </div>
+        </div>
+        <!-- Button to Apply Filters -->
+        <div class="field">
+          <button class="button is-primary is-fullwidth" v-on:click="applyFilters()">Apply Filters</button>
+        </div>
+      </aside>
+    </div>
+
+
+    <!-- New task forms -->
+    <div class="column is-widescreen">
+      <section class="box">
+        <h3 class="title is-4">New Task</h3>
+        <div class="field">
+          <div class="control">
+            <input class="input" placeholder="Title" v-model="new_task.title" />
+          </div>
+        </div>
+        <div class="field">
+          <div class="control">
+            <textarea class="textarea" placeholder="Description" v-model="new_task.description"></textarea>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Deadline:</label>
+          <div class="control">
+            <input class="input" type="date" v-model="new_task.deadline" />
+          </div>
+        </div>
+        <div class="field">
+          <button class="button is-primary is-fullwidth" v-on:click="post_new_task()">Post a new Task</button>
+        </div>
+      </section>
+
+
+      <div id="popupOverlay" v-show="isPopupOpen" class="popup-overlay" v-if="editingTask.isEditable || editingTask.isEditableStatus">
+        <div id="popupContent" class="popup-content">
+          <span class="close-button" @click="closePopup">close</span>
+          <h3>Edit Task</h3>
+          <!-- Form for editing task details -->
+          <form @submit.prevent="editTask(editingTask)">
+            <div class="field" v-if="editingTask.isEditable">
+              <label class="label" for="editTitle">Title</label>
+              <div class="control">
+                <!-- Bind to editingTask.title -->
+                <input type="text" id="editTitle" class="input" v-model="editingTask.title" >
+              </div>
+            </div>
+            <div class="field" v-if="editingTask.isEditable">
+              <label class="label" for="editDescription">Description</label>
+              <div class="control">
+                <!-- Bind to editingTask.description -->
+                <textarea id="editDescription" class="textarea" v-model="editingTask.description">{{editingTask.description}}</textarea>
+              </div>
+            </div>
+            <div class="field" v-if="editingTask.isEditable">
+              <label class="label" for="editDeadline">Deadline</label>
+              <div class="control">
+                <!-- Bind to editingTask.deadline -->
+                <input type="date" id="editDeadline" class="input" v-model="editingTask.deadline">
+              </div>
+            </div>
+            <div class="field" v-if="editingTask.isEditable">
+              <label class="label" for="editList">Assign to</label>
+              <div class="control">
+                  <div class="select">
+                      <select id="editList" v-model="editingTask.list" >
+                          <option v-for="option in listOptions" :value="option.value">{{ option.label }}</option>
+                      </select>
+                  </div>
+              </div>
+            </div>
+
+            <div class="field" v-if="editingTask.isEditableStatus">
+              <label class="label" for="editStatus">Status</label>
+              <div class="control">
+                  <div class="select">
+                      <select id="editStatus" v-model="editingTask.status">
+                          <option value="">All</option>
+                          <option value="pending">Pending</option>
+                          <option value="acknowledged">Acknowledged</option>
+                          <option value="rejected">Rejected</option>
+                          <option value="completed">Completed</option>
+                          <option value="failed">Failed</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+          <div class="field is-grouped">
+            <div class="control">
+              <button type="submit" class="button is-primary">Save</button>
+            </div>
+            <div class="control">
+              <button type="button" class="button" @click="closePopup">Cancel</button>
+            </div>
+          </div>
+          </form>
+        </div>
+      </div>
+      <div id="commentsModal" class="modal" :class="{ 'is-active': isCommentsModalOpen }">
+        <div class="modal-background" @click="closeCommentsModal"></div>
+        <div class="modal-content">
+          <div class="box">
+            <h3 class="title is-4">Comments for Task: {{ currentTaskTitle }}</h3>
+            <div v-for="comment in currentTaskComments" :key="comment.id">
+              <p>{{ comment.body }}</p>
+              <p>Posted by {{ comment.author.first_name }} on {{ comment.post_date }}</p>
+            </div>
+            <form @submit.prevent="postComment(currentTaskId)">
+              <textarea v-model="newComment[currentTaskId]" placeholder="Add a comment" class="textarea"></textarea>
+              <button type="submit" class="button is-primary">Post Comment</button>
+            </form>
+          </div>
+        </div>
+        <button class="modal-close is-large" aria-label="close" @click="closeCommentsModal"></button>
+      </div>
+
+      <!-- Feed below input-->
+      <section class="box" v-for="task in tasks" :key="task.id">
+        <div>
+          <h2 class="title is-5"><a v-bind:href="`task/${task.id}`">{{task.title}}</a></h2>
+          <p style="font-size: 20px;">{{task.description}}</p>
+          <p>Status: {{task.status}}</p>
+          <p>Deadline: {{task.deadline}}</p>
+          <p>Assigned to: {{ task.assigned_to_name ? task.assigned_to_name : 'None' }}</p>
+          <div>
+            <p>Posted on: {{task.date_created}} by {{task.created_by_name}}</p>
+            <a @click="openCommentsModal(task.id, task.title)">comments</a>
+            <!-- Edit button with conditional rendering -->
+            <button v-if="isAuthorizedToEdit(task, [[=globals().get('user')]]) || isAuthorizedToChangeStatus(task, [[=globals().get('user')]])" @click="openPopup(task,[[=globals().get('user')]])" class="minimal-edit-button">Edit</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Change Manager -->
+    <div class="column is-one-quarter">
+      <aside class="menu box">
+        <p class="menu-label">Change Manager</p>
+        <label class="label" v-if="isCEO([[=globals().get('user')]])">CEO</label>
+        <div class="field" v-if="!isCEO([[=globals().get('user')]])">
+          <label class="label">Current Manager:</label>
+          <div class="control" v-if="currentManagerName === 'undefined undefined'">None</div>
+          <div class="control" v-else>{{ currentManagerName }}</div>
+        </div>
+        <div v-if="errorMessage" class="notification is-danger">
+          {{ errorMessage }}
+        </div>
+        <div class="field" v-if="!isCEO([[=globals().get('user')]])">
+          <label class="label">Change Manager:</label>
+          <div class="control">
+            <div class="select is-fullwidth">
+              <select v-model="newManagerId">
+                <option v-for="manager in managerList" :value="manager.value">
+                  {{ manager.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="field" v-if="!isCEO([[=globals().get('user')]])">
+          <button class="button is-primary is-fullwidth" @click="changeManager(([[=globals().get('user')]]))">Change Manager</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+[[block page_scripts]]
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.8/axios.min.js"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="[[=URL('static/js/custom.js')]]"></script>
+[[end]]
