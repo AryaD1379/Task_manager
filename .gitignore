@@ -1,0 +1,11 @@
+apps/_dashboard
+apps/__pycache__ 
+apps/_documentation 
+apps/_scaffold 
+apps/_minimal 
+apps/_default 
+apps/showcase
+apps/.service
+.DS_Store
+README.md
+apps/
